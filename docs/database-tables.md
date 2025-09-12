@@ -6,29 +6,6 @@
 - Secure: Sensitive PII stored in employee_details with its own access layer.
 - Flexible: Supports employees without logins; supports users without HR profiles.
 
-## Core Module Old
-
-| Table             | Fields                                                                                                                                                                                    | Purpose & Notes                                                                                    | Relations                                                                |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| **users**         | id (PK), name, username, email, password_hash, role (`admin` / `user`), department_id (FK), status (`active`, `inactive`, `suspended`), created_at, updated_at, last_login_at             | Stores all platform accounts. Department link is optional if the user is system-level admin.       | department_id → departments.id                                           |
-| **permissions**   | id (PK), user_id (FK), module_id (FK), feature_id (FK), access_level (`create`, `read`, `update`, `delete`), scope (`all`, `department`, `self`), granted_by (FK to users.id), created_at | Defines **fine-grained access control** for each user per feature. Scope lets us limit access.     | user_id → users.id; module_id → modules.id; feature_id → features.id     |
-| **modules**       | id (PK), name, code (short unique string), description, is_core (boolean), created_at                                                                                                     | Represents a major system area (Core, HR, Sales, Finance). The `code` is for internal referencing. | None directly dependent; linked via features & permissions               |
-| **features**      | id (PK), module_id (FK), name, code, description, created_at                                                                                                                              | Breaks a module into specific actions/pages (e.g., “Create Employee”, “Edit Department”).          | module_id → modules.id                                                   |
-| **notifications** | id (PK), user_id (FK), title, message, type (`info`, `warning`, `error`, `success`), read_status (boolean), created_at, read_at                                                           | For user-facing system alerts/messages.                                                            | user_id → users.id                                                       |
-| **audit_logs**    | id (PK), user_id (FK), module_id (FK), feature_id (FK), action, target_id, target_type, details (JSON), created_at                                                                        | Tracks every important action for compliance/debugging.                                            | user_id → users.id; module_id → modules.id; feature_id → features.id     |
-| **settings**      | id (PK), key, value, description, created_at, updated_at                                                                                                                                  | Global config table for system-wide settings (e.g., company name, theme).                          | No direct FK                                                             |
-| **attachments**   | id (PK), uploaded_by (FK), module_id (FK), feature_id (FK), file_name, file_path, file_type, size, created_at                                                                             | Centralized file management for any module.                                                        | uploaded_by → users.id; module_id → modules.id; feature_id → features.id |
-
-## HR Module Old
-
-| Table                  | Fields                                                                                                                                                                             | Purpose & Notes                                                                         | Relations                                          |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| **departments**        | id (PK), name, code, description, created_at                                                                                                                                       | Groups employees/users logically.                                                       | None directly, but linked to users & employees     |
-| **employees**          | id (PK), user_id (FK), department_id (FK), employee_code, job_title, hire_date, employment_status (`active`, `on_leave`, `terminated`), created_at                                 | Links HR-specific info to a user account. Keeps `users` table clean.                    | user_id → users.id; department_id → departments.id |
-| **employee_details**   | id (PK), employee_id (FK), date_of_birth, gender, phone, address, emergency_contact_name, emergency_contact_phone, national_id, tax_number, bank_account, created_at, updated_at   | Extended employee profile data. Keeps sensitive data separate for security/permissions. | employee_id → employees.id                         |
-| **leave_requests**     | id (PK), employee_id (FK), leave_type (`annual`, `sick`, etc.), start_date, end_date, reason, status (`pending`, `approved`, `rejected`), approved_by (FK to users.id), created_at | Leave management.                                                                       | employee_id → employees.id; approved_by → users.id |
-| **attendance_records** | id (PK), employee_id (FK), date, check_in_time, check_out_time, status (`present`, `absent`, `late`, `on_leave`), created_at                                                       | Tracks attendance for payroll/performance.                                              | employee_id → employees.id                         |
-
 ---
 
 ## Core Module New
@@ -54,6 +31,58 @@
 | **leave_requests**     | id (PK), employee_id (FK), leave_type (`annual`, `sick`…), start_date, end_date, reason, status (`pending`, `approved`, `rejected`), approved_by (FK to users.id), created_at    | Leave tracking.                                                            | FK to `employees` (requester), FK to `users` (approver) — because approvers are system accounts. |
 | **attendance_records** | id (PK), employee_id (FK), date, check_in_time, check_out_time, status (`present`, `absent`, `late`, `on_leave`), created_at                                                     | Tracks daily attendance.                                                   | FK to `employees` — attendance belongs to an employee, not directly to a `user`.                 |
 
+---
+
+---
+
+## Core Module New
+
+| Table             | Fields                                                                                                                                                                              |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **users**         | id (PK), name, username, email, passwordHash, role (`admin`, `user`), status (`active`, `inactive`, `suspended`), lastLoginAt, createdAt, updatedAt                                 |
+| **permissions**   | id (PK), userId (FK), moduleId (FK), featureId (FK), accessLevel (`create`, `read`, `update`, `delete`), scope (`all`, `department`, `self`), grantedBy (FK to users.id), createdAt |
+| **modules**       | id (PK), name, code (short unique), description, is_core (boolean), created_at                                                                                                      |
+| **features**      | id (PK), module_id (FK), name, code, description, created_at                                                                                                                        |
+| **notifications** | id (PK), user_id (FK), title, message, type (`info`, `warning`, `error`, `success`), read_status (boolean), created_at, read_at                                                     |
+| **audit_logs**    | id (PK), user_id (FK), module_id (FK), feature_id (FK), action, target_id, target_type, details (JSON), created_at                                                                  |
+| **settings**      | id (PK), key, value, description, created_at, updated_at                                                                                                                            |
+| **attachments**   | id (PK), uploaded_by (FK), module_id (FK), feature_id (FK), file_name, file_path, file_type, size, created_at                                                                       |
+| **sessions**      | id (PK), user_id (FK), refresh_token, ip_address, user_agent, expires_at, revoked_at, created_at                                                                                    |
+
+## HR Module New
+
+| Table                  | Fields                                                                                                                                                                           |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **departments**        | id (PK), name, code, description, created_at                                                                                                                                     |
+| **positions**          | id (PK), department_id (FK), title, description, created_at                                                                                                                      |
+| **employees**          | id (PK), user_id (FK, nullable), department_id (FK), position_id (FK), employee_code, hire_date, employment_status (`active`, `on_leave`, `terminated`), created_at              |
+| **employee_details**   | id (PK), employee_id (FK), date_of_birth, gender, phone, address, emergency_contact_name, emergency_contact_phone, national_id, tax_number, bank_account, created_at, updated_at |
+| **employee_documents** | id (PK), employee_id (FK), file_name, file_path, file_type, uploaded_by (FK), created_at                                                                                         |
+| **leave_requests**     | id (PK), employee_id (FK), leave_type (`annual`, `sick`…), start_date, end_date, reason, status (`pending`, `approved`, `rejected`), approved_by (FK to users.id), created_at    |
+| **attendance_records** | id (PK), employee_id (FK), date, check_in_time, check_out_time, status (`present`, `absent`, `late`, `on_leave`), created_at                                                     |
+
+Purpose:
+
+- `users` : Stores all system user accounts
+- `permissions` : Manages fine-grained, per-user access rights to modules and features
+- `modules` : Stores high-level system modules (Core, HR, Finance, etc.)
+- `features` : Defines individual functional features within a module
+- `notifications` : Stores system notifications to users
+- `audit_logs` : Tracks significant system actions performed by users for accountability.
+- `settings` : Stores system-wide configuration settings (company name, currency, etc.)
+- `attachments` : Stores metadata for files uploaded to the system
+- `sessions` : Tracks active user sessions for authentication and token management
+
+- `departments` : Stores all organizational departments
+- `positions` : Defines job titles within each department
+- `employees` : Stores records for all employees in the organization
+- `employee_details` : Holds sensitive personal and employment-related data
+- `employee_documents` : Stores references to documents associated with an employee (employment contracts, etc.)
+- `leave_requests` : Tracks employee leave applications
+- `attendance_records` : Stores daily attendance logs
+
+---
+
 ## Relationship Map
 
 ### Core Module
@@ -62,25 +91,42 @@
 users -< permissions
 users -< notifications
 users -< audit_logs
+users -< attachments
+users -< sessions
 
 modules -< features
 features -< permissions
-```
+features -< audit_logs
+features -< attachments
 
-users has no direct link to departments — that link exists only if HR is installed.
+modules -< permissions
+modules -< audit_logs
+modules -< attachments
+```
 
 ### HR Module
 
 ```bash
+departments -< positions
 departments -< employees
+
+positions -< employees
+
 employees -< employee_details (1:1)
+employees -< employee_documents
+employees -< leave_requests
+employees -< attendance_records
+
 employees (optional) -> users  // employees.user_id -> users.id
 
+leave_requests (approved_by) -> users
+employee_documents (uploaded_by) -> users
 ```
 
 ## FK List
 
 ```bash
+# Core Module
 permissions.user_id -> users.id
 permissions.feature_id -> features.id
 permissions.module_id -> modules.id
@@ -98,14 +144,22 @@ attachments.uploaded_by -> users.id
 attachments.module_id -> modules.id
 attachments.feature_id -> features.id
 
-employees.user_id -> users.id  (nullable, optional link)
+sessions.user_id -> users.id
+
+# HR Module
+positions.department_id -> departments.id
+
+employees.user_id -> users.id  (nullable, optional)
 employees.department_id -> departments.id
+employees.position_id -> positions.id
 
 employee_details.employee_id -> employees.id
+
+employee_documents.employee_id -> employees.id
+employee_documents.uploaded_by -> users.id
 
 leave_requests.employee_id -> employees.id
 leave_requests.approved_by -> users.id
 
 attendance_records.employee_id -> employees.id
-
 ```
