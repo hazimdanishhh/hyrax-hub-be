@@ -24,6 +24,7 @@ const cookieOptions = (maxAgeMs) => ({
   secure: prod,
   sameSite: prod ? "none" : "lax",
   maxAge: maxAgeMs,
+  domain: "costing-system.onrender.com",
 });
 
 // =============================
