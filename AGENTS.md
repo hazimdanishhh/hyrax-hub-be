@@ -5,6 +5,27 @@
 - Will implement features in phases
 - Will have secure authentication
 
+---
+
+## One-Paragraph Summary
+
+This document defines the blueprint for building a secure, enterprise-grade, modular web application: a React frontend with SCSS styling, Framer Motion animations, Axios for API calls, and React Context for state/auth; a Node.js + Express backend using Sequelize with MySQL; and a session-tracked JWT authentication/authorization system. It outlines a detailed relational database schema for a core module and HR module, specifies file-storage strategy (object storage such as S3/R2), enforces strong security practices (bcrypt password hashing, CORS, HTTPS, centralized role/permission checks), and prescribes a clean MVC-style folder structure, CI/CD via GitHub Actions, environment-specific deployments (Render staging → Hostinger VPS production), and testing workflows. The philosophy centers on scalability, modularity, and future-proofing, ensuring the platform can grow into a multi-department, ERP-like system with microservice flexibility and clear developer alignment.
+
+---
+
+## Suggested Additions / Improvements
+
+1. **Versioning & Change Log** – Add a section describing how updates to this file are tracked (e.g., semantic versioning, CHANGELOG.md) so humans/agents can stay aligned.
+2. **API Design Guidelines** – Brief REST/GraphQL conventions (naming, error format, pagination) to maintain consistency.
+3. **Coding Standards** – Linting/formatting rules (ESLint, Prettier), commit message style (Conventional Commits).
+4. **Monitoring & Observability** – Plans for logging, metrics, alerting (e.g., Winston, PM2, Sentry, OpenTelemetry).
+5. **Deployment & Scaling Strategy** – Brief notes on horizontal scaling, load balancers, and backup/DR strategy for database and object storage.
+6. **Performance & Caching** – Guidelines for query optimization, use of Redis or CDN if traffic grows.
+7. **Accessibility & UX** – High-level commitment to WCAG compliance and responsive design standards.
+8. **Testing Roadmap** – Specify unit/integration testing frameworks (Jest, Supertest) and code-coverage targets.
+
+---
+
 ## 🎯 Purpose
 
 This document exists to keep alignment between developer(s) and AI agents when building and scaling our internal and client-facing applications. It defines the **philosophy, best practices, and technical decisions** that must guide development to ensure **scalability, security, maintainability, and clarity**.
@@ -26,16 +47,16 @@ This document exists to keep alignment between developer(s) and AI agents when b
 
 ### **Frontend**
 
-- Framework: **React** (SPA now, migrating toward SSR with Vike if needed).
-- Styling: **TailwindCSS**, SCSS (legacy).
-- Animations: **Framer Motion**.
-- API Calls: **Axios with interceptors**.
-- State/Auth: **React Context (AuthContext)** for authentication & session handling.
-- Deployment: **Hostinger (Frontend)**.
+- Framework: **React**
+- Styling: **SCSS**
+- Animations: **Framer Motion**
+- API Calls: **Axios with interceptors**
+- State/Auth: **React Context (AuthContext)** for authentication & session handling
+- Deployment: **Hostinger (Frontend)**
 
 ### **Backend**
 
-- Framework: **Node.js + Express (ES Modules)**.
+- Framework: **Node.js + Express**.
 - ORM: **Sequelize (MySQL)**.
 - Auth: **JWT (Access + Refresh rotation) with Session tracking in DB**.
 - Middleware: Separate `authenticateUser`, `authorizeAccess`, `authorizeAdmin`, etc.
@@ -46,11 +67,40 @@ This document exists to keep alignment between developer(s) and AI agents when b
 - **MySQL** (preferred over MongoDB for structured, relational, multi-module ERP-style apps).
 - Hosted on same VPS or dedicated managed DB (future scaling).
 
+#### Tables
+
+- **Core Module**
+
+| Table             | Fields                                                                                                                                                                              |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **users**         | id (PK), name, username, email, passwordHash, role (`admin`, `user`), status (`active`, `inactive`, `suspended`), lastLoginAt, createdAt, updatedAt                                 |
+| **permissions**   | id (PK), userId (FK), moduleId (FK), featureId (FK), accessLevel (`create`, `read`, `update`, `delete`), scope (`all`, `department`, `self`), grantedBy (FK to users.id), createdAt |
+| **modules**       | id (PK), name, code (short unique), description, is_core (boolean), created_at                                                                                                      |
+| **features**      | id (PK), module_id (FK), name, code, description, created_at                                                                                                                        |
+| **notifications** | id (PK), user_id (FK), title, message, type (`info`, `warning`, `error`, `success`), read_status (boolean), created_at, read_at                                                     |
+| **audit_logs**    | id (PK), user_id (FK), module_id (FK), feature_id (FK), action, target_id, target_type, details (JSON), created_at                                                                  |
+| **settings**      | id (PK), key, value, description, created_at, updated_at                                                                                                                            |
+| **attachments**   | id (PK), uploaded_by (FK), module_id (FK), feature_id (FK), file_name, file_path, file_type, size, created_at                                                                       |
+| **sessions**      | id (PK), user_id (FK), refresh_token, ip_address, user_agent, expires_at, revoked_at, created_at                                                                                    |
+
+- **HR Module**
+
+| Table                  | Fields                                                                                                                                                                           |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **departments**        | id (PK), name, code, description, created_at                                                                                                                                     |
+| **positions**          | id (PK), department_id (FK), title, description, created_at                                                                                                                      |
+| **employees**          | id (PK), user_id (FK, nullable), department_id (FK), position_id (FK), employee_code, hire_date, employment_status (`active`, `on_leave`, `terminated`), created_at              |
+| **employee_details**   | id (PK), employee_id (FK), date_of_birth, gender, phone, address, emergency_contact_name, emergency_contact_phone, national_id, tax_number, bank_account, created_at, updated_at |
+| **employee_documents** | id (PK), employee_id (FK), file_name, file_path, file_type, uploaded_by (FK), created_at                                                                                         |
+| **leave_requests**     | id (PK), employee_id (FK), leave_type (`annual`, `sick`…), start_date, end_date, reason, status (`pending`, `approved`, `rejected`), approved_by (FK to users.id), created_at    |
+| **attendance_records** | id (PK), employee_id (FK), date, check_in_time, check_out_time, status (`present`, `absent`, `late`, `on_leave`), created_at                                                     |
+
 ### **Storage**
 
 - File uploads stored in **object storage**, not DB.
 - Options: AWS S3, Google Cloud Storage, Cloudflare R2, DigitalOcean Spaces.
 - Current strategy: Evaluate free/low-cost tier (Cloudflare R2 or AWS S3 likely best).
+- Currently: Not implemented yet, haven't chosen or tested any options.
 
 ---
 
@@ -112,9 +162,9 @@ This document exists to keep alignment between developer(s) and AI agents when b
 ## 🛠️ Development Workflow
 
 - **Environment parity**: `.env` files for local, staging, production.
-- **Staging (Render free tier)** → **Production (Hostinger VPS)**.
-- **CI/CD (future)**: GitHub Actions or similar.
-- **Documentation-first**: All major changes updated in Dev Docs repo.
+- **Staging (Render free tier)** → **Production (Hostinger VPS or any relevant, reliable VPS provider)**.
+- **CI/CD**: GitHub Actions.
+- **Documentation-first**: All major changes updated in API repo.
 
 ---
 
@@ -127,5 +177,3 @@ This document exists to keep alignment between developer(s) and AI agents when b
 - **Agents and humans must stay aligned with this file** at all times.
 
 ---
-
-Would you like me to **embed an explicit "decision log" section** inside AGENTS.md too? (e.g., _Why MySQL over MongoDB_, _Why VPS over shared hosting_, _Why /me endpoint is needed_, etc.) That way, future you (or anyone joining) can see **why** decisions were made, not just what they are.
