@@ -1,34 +1,17 @@
-# 🤖 AGENTS.md
+# 🤖 AGENTS.md - Version 1.0.0
 
-- Building an enterprise-grade web application
-- Will be scalable
-- Will implement features in phases
-- Will have secure authentication
-
----
-
-## One-Paragraph Summary
-
-This document defines the blueprint for building a secure, enterprise-grade, modular web application: a React frontend with SCSS styling, Framer Motion animations, Axios for API calls, and React Context for state/auth; a Node.js + Express backend using Sequelize with MySQL; and a session-tracked JWT authentication/authorization system. It outlines a detailed relational database schema for a core module and HR module, specifies file-storage strategy (object storage such as S3/R2), enforces strong security practices (bcrypt password hashing, CORS, HTTPS, centralized role/permission checks), and prescribes a clean MVC-style folder structure, CI/CD via GitHub Actions, environment-specific deployments (Render staging → Hostinger VPS production), and testing workflows. The philosophy centers on scalability, modularity, and future-proofing, ensuring the platform can grow into a multi-department, ERP-like system with microservice flexibility and clear developer alignment.
-
----
-
-## Suggested Additions / Improvements
-
-1. **Versioning & Change Log** – Add a section describing how updates to this file are tracked (e.g., semantic versioning, CHANGELOG.md) so humans/agents can stay aligned.
-2. **API Design Guidelines** – Brief REST/GraphQL conventions (naming, error format, pagination) to maintain consistency.
-3. **Coding Standards** – Linting/formatting rules (ESLint, Prettier), commit message style (Conventional Commits).
-4. **Monitoring & Observability** – Plans for logging, metrics, alerting (e.g., Winston, PM2, Sentry, OpenTelemetry).
-5. **Deployment & Scaling Strategy** – Brief notes on horizontal scaling, load balancers, and backup/DR strategy for database and object storage.
-6. **Performance & Caching** – Guidelines for query optimization, use of Redis or CDN if traffic grows.
-7. **Accessibility & UX** – High-level commitment to WCAG compliance and responsive design standards.
-8. **Testing Roadmap** – Specify unit/integration testing frameworks (Jest, Supertest) and code-coverage targets.
+[**View Changelog**](/CHANGELOG.md)
 
 ---
 
 ## 🎯 Purpose
 
-This document exists to keep alignment between developer(s) and AI agents when building and scaling our internal and client-facing applications. It defines the **philosophy, best practices, and technical decisions** that must guide development to ensure **scalability, security, maintainability, and clarity**.
+This document defines the blueprint for building a secure, enterprise-grade, modular web application: a React frontend with SCSS styling, Framer Motion animations, Axios for API calls, and React Context for state/auth; a Node.js + Express backend using Sequelize with MySQL; and a session-tracked JWT authentication/authorization system. It defines the **philosophy, best practices, and technical decisions** that must guide development to ensure **scalability, security, maintainability, and clarity**. It outlines a detailed relational database schema for a core module and HR module, specifies file-storage strategy (object storage such as S3/R2), enforces strong security practices (bcrypt password hashing, CORS, HTTPS, centralized role/permission checks), and prescribes a clean MVC-style folder structure, CI/CD via GitHub Actions, environment-specific deployments (Render staging → Hostinger VPS production), and testing workflows. The philosophy centers on scalability, modularity, and future-proofing, ensuring the platform can grow into a multi-department, ERP-like system with microservice flexibility and clear developer alignment.
+
+- Building an enterprise-grade web application
+- Will be scalable
+- Will implement features in phases
+- Will have secure authentication
 
 ---
 
@@ -69,11 +52,11 @@ This document exists to keep alignment between developer(s) and AI agents when b
 
 #### Tables
 
-- **Core Module**
+##### Core Module
 
 | Table             | Fields                                                                                                                                                                              |
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **users**         | id (PK), name, username, email, passwordHash, role (`admin`, `user`), status (`active`, `inactive`, `suspended`), lastLoginAt, createdAt, updatedAt                                 |
+| **users**         | id (PK), name, username, email, passwordHash, role (`admin`, `director`, `manager`,`staff`), status (`active`, `inactive`, `suspended`), lastLoginAt, createdAt, updatedAt          |
 | **permissions**   | id (PK), userId (FK), moduleId (FK), featureId (FK), accessLevel (`create`, `read`, `update`, `delete`), scope (`all`, `department`, `self`), grantedBy (FK to users.id), createdAt |
 | **modules**       | id (PK), name, code (short unique), description, is_core (boolean), created_at                                                                                                      |
 | **features**      | id (PK), module_id (FK), name, code, description, created_at                                                                                                                        |
@@ -83,7 +66,7 @@ This document exists to keep alignment between developer(s) and AI agents when b
 | **attachments**   | id (PK), uploaded_by (FK), module_id (FK), feature_id (FK), file_name, file_path, file_type, size, created_at                                                                       |
 | **sessions**      | id (PK), user_id (FK), refresh_token, ip_address, user_agent, expires_at, revoked_at, created_at                                                                                    |
 
-- **HR Module**
+##### HR Module
 
 | Table                  | Fields                                                                                                                                                                           |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -175,5 +158,18 @@ This document exists to keep alignment between developer(s) and AI agents when b
 - No sensitive secrets in codebase.
 - All new features must respect **modularity** (controller-service separation).
 - **Agents and humans must stay aligned with this file** at all times.
+
+---
+
+## Suggested Additions / Improvements
+
+1. **Versioning & Change Log** – Add a section describing how updates to this file are tracked (e.g., semantic versioning, CHANGELOG.md) so humans/agents can stay aligned.
+2. **API Design Guidelines** – Brief REST/GraphQL conventions (naming, error format, pagination) to maintain consistency.
+3. **Coding Standards** – Linting/formatting rules (ESLint, Prettier), commit message style (Conventional Commits).
+4. **Monitoring & Observability** – Plans for logging, metrics, alerting (e.g., Winston, PM2, Sentry, OpenTelemetry).
+5. **Deployment & Scaling Strategy** – Brief notes on horizontal scaling, load balancers, and backup/DR strategy for database and object storage.
+6. **Performance & Caching** – Guidelines for query optimization, use of Redis or CDN if traffic grows.
+7. **Accessibility & UX** – High-level commitment to WCAG compliance and responsive design standards.
+8. **Testing Roadmap** – Specify unit/integration testing frameworks (Jest, Supertest) and code-coverage targets.
 
 ---
