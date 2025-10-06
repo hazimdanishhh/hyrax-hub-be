@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 import { Op } from "sequelize";
 import User from "../models/user.model.js";
 import Session from "../models/sessions.model.js";
+import Role from "../models/roles.model.js";
+import Department from "../models/departments.model.js";
 
 const JWT_SECRET_ACCESS = process.env.JWT_SECRET_ACCESS;
 
@@ -65,9 +67,21 @@ const authenticateUser = async (req, res, next) => {
       return res.status(401).json({ message: "Session expired or invalid" });
     }
 
-    // 6) Load user
+    // 6) Fetch user including related Role & Department
     const user = await User.findByPk(userId, {
-      attributes: ["id", "email", "name", "role", "status"],
+      attributes: ["id", "email", "name", "status"],
+      include: [
+        {
+          model: Role,
+          as: "role",
+          attributes: ["id", "name"], // adjust fields to your schema
+        },
+        {
+          model: Department,
+          as: "department",
+          attributes: ["id", "name", "code"], // adjust fields to your schema
+        },
+      ],
     });
 
     if (!user) {
@@ -77,9 +91,19 @@ const authenticateUser = async (req, res, next) => {
     // 7) Attach minimal safe user object to request
     req.user = {
       id: user.id,
-      email: user.email,
       name: user.name,
-      role: user.role,
+      email: user.email,
+      status: user.status,
+      role: user.role
+        ? { id: user.role.id, name: user.role.name, code: user.role.code }
+        : null,
+      department: user.department
+        ? {
+            id: user.department.id,
+            name: user.department.name,
+            code: user.department.code,
+          }
+        : null,
     };
 
     // 8) Optionally attach session id if downstream needs it

@@ -50,32 +50,91 @@ This document defines the blueprint for building a secure, enterprise-grade, mod
 - **MySQL** (preferred over MongoDB for structured, relational, multi-module ERP-style apps).
 - Hosted on same VPS or dedicated managed DB (future scaling).
 
+#### General API Endpoint Structure
+
+| Action          | Route           | Purpose                                                               |
+| --------------- | --------------- | --------------------------------------------------------------------- |
+| **GET /me**     | `/resource/me`  | Fetch the current user’s own record(s) (only when personal resource). |
+| **GET /:id**    | `/resource/:id` | Fetch a single item by ID. Scoped by middleware.                      |
+| **GET /**       | `/resource`     | Fetch multiple items (self, dept, or all depending on scope).         |
+| **POST /**      | `/resource`     | Create a new item. Scoped by middleware.                              |
+| **PATCH /:id**  | `/resource/:id` | Update an item by ID (self, dept, all).                               |
+| **DELETE /:id** | `/resource/:id` | Delete an item by ID (self, dept, all).                               |
+
 #### Tables
 
 ##### Core Module
 
-| Table             | Fields                                                                                                                                                                              |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **users**         | id (PK), name, username, email, passwordHash, role (`admin`, `director`, `manager`,`staff`), status (`active`, `inactive`, `suspended`), lastLoginAt, createdAt, updatedAt          |
-| **permissions**   | id (PK), userId (FK), moduleId (FK), featureId (FK), accessLevel (`create`, `read`, `update`, `delete`), scope (`all`, `department`, `self`), grantedBy (FK to users.id), createdAt |
-| **modules**       | id (PK), name, code (short unique), description, is_core (boolean), created_at                                                                                                      |
-| **features**      | id (PK), module_id (FK), name, code, description, created_at                                                                                                                        |
-| **notifications** | id (PK), user_id (FK), title, message, type (`info`, `warning`, `error`, `success`), read_status (boolean), created_at, read_at                                                     |
-| **audit_logs**    | id (PK), user_id (FK), module_id (FK), feature_id (FK), action, target_id, target_type, details (JSON), created_at                                                                  |
-| **settings**      | id (PK), key, value, description, created_at, updated_at                                                                                                                            |
-| **attachments**   | id (PK), uploaded_by (FK), module_id (FK), feature_id (FK), file_name, file_path, file_type, size, created_at                                                                       |
-| **sessions**      | id (PK), user_id (FK), refresh_token, ip_address, user_agent, expires_at, revoked_at, created_at                                                                                    |
+###### 1. Users
+
+| Field              | Type                                    | Notes                                          |
+| ------------------ | --------------------------------------- | ---------------------------------------------- |
+| id (PK)            | UUID/int                                | Unique identifier                              |
+| role_id (FK)       | FK → Roles                              | Defines the user’s role (staff, manager, etc.) |
+| department_id (FK) | FK → Departments                        | Which department the user belongs to           |
+| name               | string                                  | Full name                                      |
+| username           | string (unique)                         | Login credential                               |
+| email              | string (unique)                         | Login / communication                          |
+| password_hash      | string                                  | Hashed password                                |
+| status             | enum(`active`, `inactive`, `suspended`) | Account status                                 |
+| last_login_at      | datetime                                | Audit/tracking                                 |
+| created_at         | datetime                                | Record creation                                |
+| updated_at         | datetime                                | Record update                                  |
+
+###### 2. Roles
+
+| Field       | Type     | Notes                                                                     |
+| ----------- | -------- | ------------------------------------------------------------------------- |
+| id (PK)     | int/UUID | Unique identifier                                                         |
+| name        | string   | (`admin`, `director`, `manager`, `staff`)                                 |
+| rank        | int      | Hierarchy level 1-100 (e.g. admin=100, director=80, manager=50, staff=10) |
+| description | string   | Human-readable role explanation                                           |
+
+###### 3. Departments
+
+| Field       | Type     | Notes                            |
+| ----------- | -------- | -------------------------------- |
+| id (PK)     | int/UUID | Unique identifier                |
+| name        | string   | (`sales`, `hr`, `finance`, etc.) |
+| code        | string   | Short code (e.g. `SAL`, `HR`)    |
+| description | string   | Optional                         |
+| created_at  | datetime | —                                |
+| updated_at  | datetime | —                                |
+
+###### 4. Sessions
+
+| Field         | Type       | Notes                          |
+| ------------- | ---------- | ------------------------------ |
+| id (PK)       | UUID       | Unique session ID              |
+| user_id (FK)  | FK → Users | Session owner                  |
+| refresh_token | string     | Secure token                   |
+| ip_address    | string     | Security/audit                 |
+| user_agent    | string     | Device/browser info            |
+| expires_at    | datetime   | Expiry time                    |
+| revoked_at    | datetime   | If user logged out/invalidated |
+| created_at    | datetime   | Time session is created        |
+
+###### 5. Notifications
+
+| Field        | Type                                        | Notes                        |
+| ------------ | ------------------------------------------- | ---------------------------- |
+| id (PK)      | UUID                                        | Unique notification          |
+| user_id (FK) | FK → Users                                  | Recipient                    |
+| title        | string                                      | Title/subject                |
+| message      | text                                        | Body                         |
+| type         | enum(`info`, `warning`, `error`, `success`) | Notification type            |
+| read_status  | boolean                                     | Read/unread                  |
+| created_at   | datetime                                    | Time notification is created |
 
 ##### HR Module
 
 | Table                  | Fields                                                                                                                                                                           |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **departments**        | id (PK), name, code, description, created_at                                                                                                                                     |
 | **positions**          | id (PK), department_id (FK), title, description, created_at                                                                                                                      |
 | **employees**          | id (PK), user_id (FK, nullable), department_id (FK), position_id (FK), employee_code, hire_date, employment_status (`active`, `on_leave`, `terminated`), created_at              |
 | **employee_details**   | id (PK), employee_id (FK), date_of_birth, gender, phone, address, emergency_contact_name, emergency_contact_phone, national_id, tax_number, bank_account, created_at, updated_at |
 | **employee_documents** | id (PK), employee_id (FK), file_name, file_path, file_type, uploaded_by (FK), created_at                                                                                         |
-| **leave_requests**     | id (PK), employee_id (FK), leave_type (`annual`, `sick`…), start_date, end_date, reason, status (`pending`, `approved`, `rejected`), approved_by (FK to users.id), created_at    |
+| **leave_requests**     | id (PK), employee_id (FK), leave_type (`annual`, `sick`, …), start_date, end_date, reason, status (`pending`, `approved`, `rejected`), approved_by (FK to users.id), created_at  |
 | **attendance_records** | id (PK), employee_id (FK), date, check_in_time, check_out_time, status (`present`, `absent`, `late`, `on_leave`), created_at                                                     |
 
 ### **Storage**

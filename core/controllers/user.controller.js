@@ -1,6 +1,8 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import { Op } from "sequelize";
+import Role from "../models/roles.model.js";
+import Department from "../models/departments.model.js";
 
 // =============================
 // GET ALL USERS (Exclude passwordHash)
@@ -9,6 +11,14 @@ export const getUsers = async (req, res, next) => {
   try {
     const users = await User.findAll({
       attributes: { exclude: ["passwordHash"] },
+      include: [
+        { model: Role, as: "role", attributes: ["id", "name", "rank"] },
+        {
+          model: Department,
+          as: "department",
+          attributes: ["id", "name", "code"],
+        },
+      ],
     });
     res.status(200).json({ success: true, data: users });
   } catch (error) {
@@ -24,6 +34,14 @@ export const getUser = async (req, res, next) => {
     const id = req.params.id;
     const user = await User.findByPk(id, {
       attributes: { exclude: ["passwordHash"] },
+      include: [
+        { model: Role, as: "role", attributes: ["id", "name", "rank"] },
+        {
+          model: Department,
+          as: "department",
+          attributes: ["id", "name", "code"],
+        },
+      ],
     });
 
     if (!user) {
@@ -43,7 +61,6 @@ export const getUser = async (req, res, next) => {
 // [GET] /api/users/me
 export const getCurrentUser = async (req, res, next) => {
   try {
-    // req.user is set by your auth middleware after verifying access token
     const userId = req.user?.id;
     if (!userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -51,6 +68,14 @@ export const getCurrentUser = async (req, res, next) => {
 
     const user = await User.findByPk(userId, {
       attributes: { exclude: ["passwordHash"] },
+      include: [
+        { model: Role, as: "role", attributes: ["id", "name", "rank"] },
+        {
+          model: Department,
+          as: "department",
+          attributes: ["id", "name", "code"],
+        },
+      ],
     });
 
     if (!user) {
@@ -71,7 +96,7 @@ export const getCurrentUser = async (req, res, next) => {
 export const updateUser = async (req, res, next) => {
   try {
     const id = req.params.id;
-    const { name, username, email, password } = req.body;
+    const { name, username, email, password, roleId, departmentId } = req.body;
 
     const user = await User.findByPk(id);
     if (!user) {
@@ -80,23 +105,20 @@ export const updateUser = async (req, res, next) => {
         .json({ success: false, message: "User not found" });
     }
 
-    // Prepare update payload
     const updates = {};
-
     if (name !== undefined) updates.name = name;
     if (username !== undefined) updates.username = username;
     if (email !== undefined) updates.email = email;
     if (password !== undefined) {
       updates.passwordHash = await bcrypt.hash(password, 10);
     }
+    if (roleId !== undefined) updates.roleId = roleId;
+    if (departmentId !== undefined) updates.departmentId = departmentId;
 
-    // Check for duplicates on username or email (if changed)
+    // Duplicate checks
     if (username && username !== user.username) {
       const usernameExists = await User.findOne({
-        where: {
-          username,
-          id: { [Op.ne]: id },
-        },
+        where: { username, id: { [Op.ne]: id } },
       });
       if (usernameExists) {
         return res
@@ -107,10 +129,7 @@ export const updateUser = async (req, res, next) => {
 
     if (email && email !== user.email) {
       const emailExists = await User.findOne({
-        where: {
-          email,
-          id: { [Op.ne]: id },
-        },
+        where: { email, id: { [Op.ne]: id } },
       });
       if (emailExists) {
         return res
@@ -121,9 +140,16 @@ export const updateUser = async (req, res, next) => {
 
     await user.update(updates);
 
-    // Return updated user excluding passwordHash
     const updatedUser = await User.findByPk(id, {
       attributes: { exclude: ["passwordHash"] },
+      include: [
+        { model: Role, as: "role", attributes: ["id", "name", "rank"] },
+        {
+          model: Department,
+          as: "department",
+          attributes: ["id", "name", "code"],
+        },
+      ],
     });
 
     res.status(200).json({

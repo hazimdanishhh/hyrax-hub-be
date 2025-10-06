@@ -61,7 +61,7 @@ const Session = sequelize.define(
 );
 
 // Association: 1 User → Many Sessions
-User.hasMany(Session, { foreignKey: "userId", as: "sessions" });
+User.hasMany(Session, { foreignKey: "userId", as: "session" });
 Session.belongsTo(User, { foreignKey: "userId", as: "user" });
 
 export default Session;

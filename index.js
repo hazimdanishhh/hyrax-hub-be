@@ -11,7 +11,8 @@ import errorMiddleware from "./core/middlewares/error.middleware.js";
 import { generalLimiter } from "./core/middlewares/rateLimiter.middleware.js";
 import adminRouter from "./core/routes/admin.routes.js";
 import { connectDB } from "./config/db.js";
-import moduleRouter from "./core/routes/module.routes.js";
+import roleRouter from "./core/routes/role.routes.js";
+import departmentRouter from "./core/routes/department.routes.js";
 
 connectDB();
 const app = express();
@@ -32,7 +33,8 @@ app.use(generalLimiter); // Global rate limiter
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRouter);
 app.use("/api/admin", adminRouter);
-app.use("/api/modules", moduleRouter);
+app.use("/api/roles", roleRouter);
+app.use("/api/departments", departmentRouter);
 
 // Global Error Middlewares must be after Routes
 app.use(errorMiddleware);

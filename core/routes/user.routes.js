@@ -7,7 +7,6 @@ import {
   updateUser,
 } from "../controllers/user.controller.js";
 import authenticateUser from "../middlewares/auth.middleware.js";
-import authorizeAccess from "../middlewares/authAccess.middleware.js";
 import authorizeAdmin from "../middlewares/authAdmin.middleware.js";
 
 const userRouter = Router();

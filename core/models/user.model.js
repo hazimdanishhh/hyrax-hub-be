@@ -33,10 +33,29 @@ const User = sequelize.define(
       allowNull: false,
       field: "password_hash", // DB column
     },
-    role: {
-      type: DataTypes.ENUM("admin", "user"),
-      allowNull: false,
-      defaultValue: "user",
+    // FK: Role
+    roleId: {
+      type: DataTypes.UUID,
+      allowNull: true, // allow null until migration is complete
+      field: "role_id",
+      references: {
+        model: "role",
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "SET NULL",
+    },
+    // FK: Department
+    departmentId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: "department_id",
+      references: {
+        model: "department",
+        key: "id",
+      },
+      onUpdate: "CASCADE",
+      onDelete: "SET NULL",
     },
     status: {
       type: DataTypes.ENUM("active", "inactive", "suspended"),

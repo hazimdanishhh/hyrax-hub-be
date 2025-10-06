@@ -1,6 +1,16 @@
-import User from "./user.model.js";
-import Permission from "./permission.model.js";
+import Department from "./departments.model";
+import Role from "./roles.model";
+import Session from "./sessions.model";
+import User from "./user.model";
 
-// User has many Permissions
-User.hasMany(Permission, { foreignKey: "userId", as: "permissions" });
-Permission.belongsTo(User, { foreignKey: "userId" });
+// Association: 1 User → 1 Role
+User.belongsTo(Role, { foreignKey: "roleId", as: "role" });
+Role.hasMany(User, { foreignKey: "roleId", as: "user" });
+
+// Association: 1 User → 1 Department
+User.belongsTo(Department, { foreignKey: "departmentId", as: "department" });
+Department.hasMany(User, { foreignKey: "departmentId", as: "user" });
+
+// Association: 1 User → Many Sessions
+User.hasMany(Session, { foreignKey: "userId", as: "session" });
+Session.belongsTo(User, { foreignKey: "userId", as: "user" });

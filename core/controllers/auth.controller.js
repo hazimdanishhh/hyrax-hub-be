@@ -9,6 +9,8 @@ import User from "../models/user.model.js";
 import { Op } from "sequelize"; // For optional session queries
 import Session from "../models/sessions.model.js";
 import sequelize from "../../config/db.js";
+import Role from "../models/roles.model.js";
+import Department from "../models/departments.model.js";
 
 const JWT_SECRET_ACCESS = process.env.JWT_SECRET_ACCESS;
 const JWT_ACCESS_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN;
@@ -34,7 +36,9 @@ const cookieOptions = (maxAgeMs) => ({
 export const register = async (req, res, next) => {
   const transaction = await sequelize.transaction();
   try {
-    const { name, username, email, password } = req.body;
+    const { name, username, email, password, departmentId, departmentCode } =
+      req.body;
+
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
@@ -53,6 +57,29 @@ export const register = async (req, res, next) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Find the "staff" role from Roles DB
+    const staffRole = await Role.findOne({ where: { name: "staff" } });
+    if (!staffRole) {
+      throw new Error("Default staff role not found. Please seed roles table.");
+    }
+
+    // Resolve departmentId (priority: departmentId > departmentCode > null)
+    let resolvedDepartmentId = null;
+    if (departmentId) {
+      resolvedDepartmentId = departmentId;
+    } else if (departmentCode) {
+      const department = await Department.findOne({
+        where: { code: departmentCode },
+      });
+      if (!department) {
+        await transaction.rollback();
+        return res
+          .status(404)
+          .json({ success: false, message: "Invalid department code" });
+      }
+      resolvedDepartmentId = department.id;
+    }
+
     // Create user
     const userId = uuidv4();
     const newUser = await User.create(
@@ -62,7 +89,8 @@ export const register = async (req, res, next) => {
         username: username || null,
         email,
         passwordHash: hashedPassword,
-        role: "user",
+        roleId: staffRole.id,
+        departmentId: resolvedDepartmentId,
         status: "active",
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -136,11 +164,29 @@ export const login = async (req, res, next) => {
         .json({ success: false, message: "email and password required" });
     }
 
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({
+      where: { email },
+      include: [
+        { model: Role, as: "role", attributes: ["id", "name"] },
+        {
+          model: Department,
+          as: "department",
+          attributes: ["id", "name", "code"],
+        },
+      ],
+    });
+
     if (!user) {
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
+    }
+
+    if (user.status !== "active") {
+      return res.status(403).json({
+        success: false,
+        message: "Account is not active. Please contact support.",
+      });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
@@ -365,9 +411,22 @@ export const refreshAccessToken = async (req, res, next) => {
         {
           model: User,
           as: "user",
-          attributes: ["id", "email", "role"],
+          attributes: ["id", "email", "roleId", "departmentId"],
+          include: [
+            {
+              model: Role,
+              as: "role",
+              attributes: ["id", "name", "rank"],
+            },
+            {
+              model: Department,
+              as: "department",
+              attributes: ["id", "name", "code"],
+            },
+          ],
         },
       ],
+
       transaction,
       lock: transaction.LOCK.UPDATE, // Prevent concurrent refreshes
     });
@@ -407,9 +466,13 @@ export const refreshAccessToken = async (req, res, next) => {
     const accessPayload = {
       userId: session.user.id,
       email: session.user.email,
-      role: session.user.role,
-      sessionId: newSessionId, // Always consistent
+      roleId: session.user.roleId,
+      role: session.user.role?.name || "staff", // fallback
+      departmentId: session.user.departmentId,
+      department: session.user.department?.name || null,
+      sessionId: newSessionId,
     };
+
     const refreshPayload = {
       userId: session.user.id,
       sessionId: newSessionId,
