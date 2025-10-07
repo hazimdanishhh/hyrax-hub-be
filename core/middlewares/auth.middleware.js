@@ -2,9 +2,9 @@
 import jwt from "jsonwebtoken";
 import { Op } from "sequelize";
 import User from "../models/user.model.js";
-import Session from "../models/sessions.model.js";
-import Role from "../models/roles.model.js";
-import Department from "../models/departments.model.js";
+import Session from "../models/session.model.js";
+import Role from "../models/role.model.js";
+import Department from "../models/department.model.js";
 
 const JWT_SECRET_ACCESS = process.env.JWT_SECRET_ACCESS;
 

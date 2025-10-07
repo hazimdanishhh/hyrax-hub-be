@@ -79,6 +79,11 @@ const User = sequelize.define(
       defaultValue: DataTypes.NOW,
       field: "updated_at",
     },
+    avatarUrl: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      field: "avatar_url",
+    },
   },
   {
     tableName: "users",

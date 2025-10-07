@@ -1,6 +1,6 @@
 // controllers/department.controller.js
 
-import Department from "../models/departments.model.js";
+import Department from "../models/department.model.js";
 
 // Create Department
 export const createDepartment = async (req, res) => {

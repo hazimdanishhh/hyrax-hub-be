@@ -7,10 +7,10 @@ import ms from "ms";
 import { v4 as uuidv4 } from "uuid";
 import User from "../models/user.model.js";
 import { Op } from "sequelize"; // For optional session queries
-import Session from "../models/sessions.model.js";
+import Session from "../models/session.model.js";
 import sequelize from "../../config/db.js";
-import Role from "../models/roles.model.js";
-import Department from "../models/departments.model.js";
+import Role from "../models/role.model.js";
+import Department from "../models/department.model.js";
 
 const JWT_SECRET_ACCESS = process.env.JWT_SECRET_ACCESS;
 const JWT_ACCESS_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN;

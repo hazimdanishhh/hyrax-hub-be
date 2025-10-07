@@ -1,6 +1,6 @@
 // controllers/role.controller.js
 
-import Role from "../models/roles.model.js";
+import Role from "../models/role.model.js";
 
 // Create Role
 export const createRole = async (req, res) => {

@@ -1,6 +1,6 @@
-import Department from "./departments.model";
-import Role from "./roles.model";
-import Session from "./sessions.model";
+import Department from "./department.model";
+import Role from "./role.model";
+import Session from "./session.model";
 import User from "./user.model";
 
 // Association: 1 User → 1 Role

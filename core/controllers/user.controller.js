@@ -1,8 +1,8 @@
 import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
 import { Op } from "sequelize";
-import Role from "../models/roles.model.js";
-import Department from "../models/departments.model.js";
+import Role from "../models/role.model.js";
+import Department from "../models/department.model.js";
 
 // =============================
 // GET ALL USERS (Exclude passwordHash)
