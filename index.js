@@ -17,6 +17,11 @@ import departmentRouter from "./core/routes/department.routes.js";
 connectDB();
 const app = express();
 
+app.use((req, res, next) => {
+  console.log("Origin:", req.headers.origin);
+  next();
+});
+
 // Middleware
 app.use(
   cors({
