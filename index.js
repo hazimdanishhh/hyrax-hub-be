@@ -17,6 +17,8 @@ import departmentRouter from "./core/routes/department.routes.js";
 connectDB();
 const app = express();
 
+app.set("trust proxy", 1);
+
 app.use((req, res, next) => {
   console.log("Origin:", req.headers.origin);
   next();
