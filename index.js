@@ -17,17 +17,10 @@ import departmentRouter from "./core/routes/department.routes.js";
 connectDB();
 const app = express();
 
-app.set("trust proxy", 1);
-
-app.use((req, res, next) => {
-  console.log("Origin:", req.headers.origin);
-  next();
-});
-
 // Middleware
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN || "http://localhost:5173", //Frontend domain
+    origin: "https://hyrax-hub.rangkaempat.com" || "http://localhost:5173", //Frontend domain
     credentials: true, // Allow cookies to be sent
   })
 );
